@@ -3,108 +3,205 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản Lý Bãi Xe - Nạp Tiền</title>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <title>Quản Lý Bãi Xe Thông Minh</title>
     
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; display: flex; justify-content: center; padding: 20px; }
-        .container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
-        h2 { color: #2c3e50; text-align: center; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
-        button { width: 100%; padding: 12px; background: #27ae60; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; transition: 0.3s; }
-        button:hover { background: #219150; }
-        #status { margin-top: 15px; text-align: center; padding: 10px; border-radius: 6px; display: none; }
-        .success { background: #d4edda; color: #155724; display: block !important; }
-        .error { background: #f8d7da; color: #721c24; display: block !important; }
-        .info-box { margin-top: 20px; border-top: 1px solid #eee; pt: 15px; font-size: 14px; color: #666; }
+        :root {
+            --primary-color: #007bff;
+            --danger-color: #dc3545;
+            --success-color: #28a745;
+            --bg-color: #f4f7f9;
+        }
+
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: var(--bg-color); margin: 0; padding: 0; }
+        
+        /* LOGIN SECTION */
+        #login-section {
+            display: flex; justify-content: center; align-items: center; height: 100vh;
+        }
+        .login-card {
+            background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            width: 100%; max-width: 380px; text-align: center;
+        }
+        .login-card h2 { margin-bottom: 30px; color: #333; }
+        .input-group { text-align: left; margin-bottom: 20px; }
+        .input-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #555; }
+        .input-group input { 
+            width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; 
+            box-sizing: border-box; outline: none; transition: 0.3s;
+        }
+        .input-group input:focus { border-color: var(--primary-color); }
+        #loginBtn { 
+            width: 100%; padding: 12px; background: var(--primary-color); color: white; 
+            border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold;
+        }
+
+        /* MAIN DASHBOARD */
+        #main-dashboard { display: none; padding: 20px; }
+        .container { max-width: 1100px; margin: 0 auto; }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        
+        #logoutBtn { 
+            padding: 10px 20px; background: var(--danger-color); color: white; 
+            border: none; border-radius: 8px; cursor: pointer; font-weight: bold;
+        }
+
+        /* PARKING GRID */
+        .parking-grid { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-bottom: 40px; }
+        .spot { 
+            width: 160px; height: 130px; border-radius: 15px; color: white;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); transition: 0.3s;
+        }
+        .spot i { font-size: 40px; margin-bottom: 10px; }
+        .empty { background: linear-gradient(135deg, #2ecc71, #27ae60); }
+        .full { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+
+        /* TABLES */
+        .card { 
+            background: white; padding: 25px; border-radius: 12px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 30px; 
+        }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th { text-align: left; padding: 15px; border-bottom: 2px solid #eee; color: #666; }
+        td { padding: 15px; border-bottom: 1px solid #f9f9f9; }
+        .balance { color: var(--primary-color); font-weight: bold; }
+        .total-revenue { 
+            background: #fff3cd; padding: 15px; border-radius: 8px; 
+            font-size: 1.2rem; font-weight: bold; color: #856404; margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>NẠP TIỀN TÀI KHOẢN</h2>
-    
-    <div class="form-group">
-        <label>Mã Thẻ (UID):</label>
-        <input type="text" id="uid" placeholder="Ví dụ: A1B2C3D4" style="text-transform: uppercase;">
+    <div id="login-section">
+        <div class="login-card">
+            <h2><i class="fas fa-user-shield"></i> HỆ THỐNG</h2>
+            <div class="input-group">
+                <label>Email Quản trị</label>
+                <input type="email" id="email" placeholder="admin@gmail.com">
+            </div>
+            <div class="input-group">
+                <label>Mật khẩu</label>
+                <input type="password" id="password" placeholder="••••••••">
+            </div>
+            <button id="loginBtn">ĐĂNG NHẬP</button>
+            <p id="error-msg" style="color: red; margin-top: 15px; font-size: 14px;"></p>
+        </div>
     </div>
-    
-    <div class="form-group">
-        <label>Số Tiền Nạp (VND):</label>
-        <input type="number" id="amount" placeholder="Ví dụ: 50000" step="1000">
+
+    <div id="main-dashboard">
+        <div class="container">
+            <header>
+                <h1><i class="fas fa-parking"></i> Quản Lý Bãi Xe</h1>
+                <button id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Đăng xuất</button>
+            </header>
+
+            <div class="parking-grid">
+                <div id="v1" class="spot empty"><i class="fas fa-check-circle"></i><span>Vị trí 1</span><small id="s_v1">TRỐNG</small></div>
+                <div id="v2" class="spot empty"><i class="fas fa-check-circle"></i><span>Vị trí 2</span><small id="s_v2">TRỐNG</small></div>
+                <div id="v3" class="spot empty"><i class="fas fa-check-circle"></i><span>Vị trí 3</span><small id="s_v3">TRỐNG</small></div>
+            </div>
+
+            <div class="card">
+                <h2><i class="fas fa-users"></i> Khách Hàng</h2>
+                <table>
+                    <thead><tr><th>STT</th><th>Mã Thẻ (RFID)</th><th>Tên Khách</th><th>Số Dư</th></tr></thead>
+                    <tbody id="usersBody"></tbody>
+                </table>
+            </div>
+
+            <div class="card">
+                <h2><i class="fas fa-history"></i> Lịch Sử Ra/Vào</h2>
+                <div class="total-revenue">TỔNG DOANH THU: <span id="revenueText">0</span> VNĐ</div>
+                <table>
+                    <thead><tr><th>Mã Thẻ</th><th>Thời Gian Vào</th><th>Thời Gian Ra</th><th>Phí (VNĐ)</th></tr></thead>
+                    <tbody id="historyBody"></tbody>
+                </table>
+            </div>
+        </div>
     </div>
-    
-    <button onclick="handleRecharge()">XÁC NHẬN NẠP TIỀN</button>
-    
-    <div id="status"></div>
 
-    <div class="info-box">
-        <p><b>Hướng dẫn:</b> Nhập chính xác mã UID thẻ hiện trên màn hình OLED hoặc Serial Monitor để nạp tiền.</p>
-    </div>
-</div>
+    <script>
+        // --- 1. CẤU HÌNH ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyB-Z6OcYd4FVJto4HUUPNAfIIeRnPGUXrI",
+            databaseURL: "https://pelagic-berm-312309-default-rtdb.asia-southeast1.firebasedatabase.app"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.database();
 
-<script>
-    // --- CẤU HÌNH FIREBASE ---
-    const firebaseConfig = {
-        apiKey: "AIzaSyB-Z6OcYd4FVJto4HUUPNAfIIeRnPGUXrI",
-        databaseURL: "https://pelagic-berm-312309-default-rtdb.asia-southeast1.firebasedatabase.app"
-    };
-    
-    // Khởi tạo Firebase
-    firebase.initializeApp(firebaseConfig);
-    const database = firebase.database();
+        // --- 2. XỬ LÝ ĐĂNG NHẬP/THOÁT ---
+        document.getElementById('loginBtn').onclick = () => {
+            const email = document.getElementById('email').value;
+            const pass = document.getElementById('password').value;
+            auth.signInWithEmailAndPassword(email, pass).catch(e => {
+                document.getElementById('error-msg').innerText = "Tài khoản hoặc mật khẩu không đúng!";
+            });
+        };
 
-    function showStatus(msg, isError = false) {
-        const statusDiv = document.getElementById('status');
-        statusDiv.innerText = msg;
-        statusDiv.className = isError ? 'error' : 'success';
-        setTimeout(() => { statusDiv.style.display = 'none'; }, 4000);
-    }
+        document.getElementById('logoutBtn').onclick = () => auth.signOut();
 
-    async function handleRecharge() {
-        const uid = document.getElementById('uid').value.trim().toUpperCase();
-        const amount = parseInt(document.getElementById('amount').value);
-
-        if (!uid || isNaN(amount) || amount <= 0) {
-            showStatus("Vui lòng nhập đầy đủ thông tin!", true);
-            return;
-        }
-
-        const userRef = database.ref('/nguoi_dung/' + uid);
-
-        try {
-            // 1. Kiểm tra thẻ có tồn tại không
-            const snapshot = await userRef.once('value');
-            if (!snapshot.exists()) {
-                showStatus("Thẻ chưa đăng ký trên hệ thống!", true);
-                return;
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                document.getElementById('login-section').style.display = 'none';
+                document.getElementById('main-dashboard').style.display = 'block';
+                startListening();
+            } else {
+                document.getElementById('login-section').style.display = 'flex';
+                document.getElementById('main-dashboard').style.display = 'none';
             }
+        });
 
-            // 2. Lấy số dư hiện tại và cộng thêm
-            const currentData = snapshot.val();
-            const currentBalance = currentData.so_du || 0;
-            const newBalance = currentBalance + amount;
-
-            // 3. Cập nhật lên Firebase
-            await userRef.update({ so_du: newBalance });
-            
-            // 4. Ghi vào lịch sử nạp (tùy chọn)
-            database.ref('/lich_su_nap').push({
-                uid: uid,
-                so_tien: amount,
-                thoi_gian: new Date().toLocaleString()
+        // --- 3. LẤY DỮ LIỆU ---
+        function startListening() {
+            // Trạng thái chỗ đỗ
+            db.ref('/vi_tri').on('value', snap => {
+                const data = snap.val() || {};
+                ['v1', 'v2', 'v3'].forEach(id => {
+                    const el = document.getElementById(id);
+                    const txt = document.getElementById('s_' + id);
+                    const icon = el.querySelector('i');
+                    if (data[id] == 1 || data[id] == "Full") {
+                        el.className = "spot full"; txt.innerText = "CÓ XE"; icon.className = "fas fa-car";
+                    } else {
+                        el.className = "spot empty"; txt.innerText = "TRỐNG"; icon.className = "fas fa-check-circle";
+                    }
+                });
             });
 
-            showStatus(`Đã nạp thành công ${amount.toLocaleString()}đ. Số dư mới: ${newBalance.toLocaleString()}đ`);
-            document.getElementById('amount').value = "";
-        } catch (error) {
-            showStatus("Lỗi kết nối Firebase: " + error.message, true);
-        }
-    }
-</script>
+            // Danh sách người dùng
+            db.ref('/nguoi_dung').on('value', snap => {
+                let html = ""; let i = 1;
+                snap.forEach(child => {
+                    const u = child.val();
+                    html += `<tr><td>${i++}</td><td><b>${child.key}</b></td><td>${u.ten || 'Khách'}</td><td class="balance">${(u.so_du || 0).toLocaleString()} đ</td></tr>`;
+                });
+                document.getElementById('usersBody').innerHTML = html || '<tr><td colspan="4">Chưa có dữ liệu</td></tr>';
+            });
 
+            // Lịch sử & Doanh thu
+            db.ref('/lich_su').on('value', snap => {
+                let html = ""; let total = 0;
+                let logs = [];
+                snap.forEach(child => {
+                    const log = child.val();
+                    total += (log.phi || 0);
+                    logs.push(log);
+                });
+                logs.reverse().forEach(log => {
+                    html += `<tr><td>${log.id || 'N/A'}</td><td>${log.thoi_gian_vao || '--'}</td><td>${log.thoi_gian_ra || '--'}</td><td style="color:green; font-weight:bold;">+${(log.phi || 0).toLocaleString()}</td></tr>`;
+                });
+                document.getElementById('revenueText').innerText = total.toLocaleString();
+                document.getElementById('historyBody').innerHTML = html || '<tr><td colspan="4">Chưa có lịch sử</td></tr>';
+            });
+        }
+    </script>
 </body>
 </html>
